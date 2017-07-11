@@ -1,0 +1,929 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Instance Roles, SAML Roles and Policies for CoFEE",
+  "Parameters": {
+    "SAMLProviderARN": {
+      "Type": "String",
+      "Description": "Arn of SAML Provider"
+    }
+  },
+  "Resources": {
+    "VZInstanceRoleprodCoFEE": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "VZInstanceRoleprodCoFEE",
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/ReadOnlyAccess"
+        ],
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "ec2.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path": "/CoFEE/"
+      }
+    },
+    "IAMInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/CoFEE/",
+        "Roles": [
+          {
+            "Ref": "VZInstanceRoleprodCoFEE"
+          }
+        ]
+      }
+    },
+    "VZSAMLDevopsPlatform": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "VZSAMLDevopsPlatform",
+        "Path": "/CoFEE/",
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/ReadOnlyAccess"
+        ],
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {
+                  "Ref": "SAMLProviderARN"
+                }
+              },
+              "Action": [
+                "sts:AssumeRoleWithSAML"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "SAML:aud": "https://signin.aws.amazon.com/saml"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "VZSAMLDevopsDBCoFEE": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "VZSAMLDevopsDBCoFEE",
+        "Path": "/CoFEE/",
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/ReadOnlyAccess"
+        ],
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {
+                  "Ref": "SAMLProviderARN"
+                }
+              },
+              "Action": [
+                "sts:AssumeRoleWithSAML"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "SAML:aud": "https://signin.aws.amazon.com/saml"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "VZSAMLDevopsLevel1": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "VZSAMLDevopsLevel1",
+        "Path": "/CoFEE/",
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/ReadOnlyAccess"
+        ],
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {
+                  "Ref": "SAMLProviderARN"
+                }
+              },
+              "Action": [
+                "sts:AssumeRoleWithSAML"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "SAML:aud": "https://signin.aws.amazon.com/saml"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "CoFEEComputePolicy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "CoFEEComputePolicy",
+        "Roles": [
+          {
+            "Ref": "VZInstanceRoleprodCoFEE"
+          },
+          {
+            "Ref": "VZSAMLDevopsPlatform"
+          },
+          {
+            "Ref": "VZSAMLDevopsLevel1"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "EC2AllowedActionsByTag",
+              "Effect": "Allow",
+              "Action": [
+                "ec2:AttachVolume",
+                "ec2:DeleteVolume",
+                "ec2:DetachVolume",
+                "ec2:RebootInstances",
+                "ec2:StartInstances",
+                "ec2:StopInstances",
+                "ec2:TerminateInstances"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "ec2:ResourceTag/VSAD": "CoFEE"
+                },
+                "StringLike": {
+                  "ec2:Region": [
+                    "us-east-1",
+                    "us-west-2"
+                  ]
+                }
+              },
+              "Resource": [
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-east-1:${AWS::AccountId}:*"
+                },
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-west-2:${AWS::AccountId}:*"
+                }
+              ]
+            },
+            {
+              "Sid": "EC2AllowedActions",
+              "Effect": "Allow",
+              "Action": [
+                "ec2:AllocateAddress",
+                "ec2:AssignPrivateIpAddresses",
+                "ec2:AssociateAddress",
+                "ec2:AssociateIamInstanceProfile",
+                "ec2:AttachNetworkInterface",
+                "ec2:AuthorizeSecurityGroupEgress",
+                "ec2:AuthorizeSecurityGroupIngress",
+                "ec2:BundleInstance",
+                "ec2:CancelBundleTask",
+                "ec2:CancelConversionTask",
+                "ec2:CancelExportTask",
+                "ec2:CancelImportTask",
+                "ec2:CancelReservedInstancesListing",
+                "ec2:CancelSpotFleetRequests",
+                "ec2:CancelSpotInstanceRequests",
+                "ec2:ConfirmProductInstance",
+                "ec2:CopyImage",
+                "ec2:CopySnapshot",
+                "ec2:CreateFlowLogs",
+                "ec2:CreateImage",
+                "ec2:CreateInstanceExportTask",
+                "ec2:CreateKeyPair",
+                "ec2:CreateNetworkInterface",
+                "ec2:CreatePlacementGroup",
+                "ec2:CreateReservedInstancesListing",
+                "ec2:CreateSnapshot",
+                "ec2:CreateSpotDatafeedSubscription",
+                "ec2:CreateVolume",
+                "ec2:DeleteNetworkInterface",
+                "ec2:DeletePlacementGroup",
+                "ec2:DeleteSnapshot",
+                "ec2:DeleteSpotDatafeedSubscription",
+                "ec2:DeregisterImage",
+                "ec2:DetachNetworkInterface",
+                "ec2:DisassociateAddress",
+                "ec2:EnableVolumeIO",
+                "ec2:GetConsoleOutput",
+                "ec2:GetPasswordData",
+                "ec2:ImportImage",
+                "ec2:ImportInstance",
+                "ec2:ImportSnapshot",
+                "ec2:ImportVolume",
+                "ec2:ModifyHosts",
+                "ec2:ModifyIdFormat",
+                "ec2:ModifyInstanceAttribute",
+                "ec2:ModifyInstancePlacement",
+                "ec2:ModifyNetworkInterfaceAttribute",
+                "ec2:ModifyPlacementGroup",
+                "ec2:ModifyReservedInstances",
+                "ec2:ModifySnapshotAttribute",
+                "ec2:ModifySpotFleetRequest",
+                "ec2:ModifyVolume",
+                "ec2:ModifyVolumeAttribute",
+                "ec2:MonitorInstances",
+                "ec2:MoveAddressToVpc",
+                "ec2:RegisterImage",
+                "ec2:ReleaseAddress",
+                "ec2:ReleaseHosts",
+                "ec2:ReplaceIamInstanceProfileAssociation",
+                "ec2:ReportInstanceStatus",
+                "ec2:RequestSpotFleet",
+                "ec2:RequestSpotInstances",
+                "ec2:ResetInstanceAttribute",
+                "ec2:ResetNetworkInterfaceAttribute",
+                "ec2:ResetSnapshotAttribute",
+                "ec2:UnassignPrivateIpAddresses"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Sid": "EC2RunInstances",
+              "Effect": "Allow",
+              "Action": "ec2:RunInstances",
+              "Condition": {
+                "StringEquals": {
+                  "ec2:InstanceProfile": [
+                    {
+                      "Fn::Sub": "arn:aws:iam::{{ACCOUNT_ID}}:instance-profile/CoFEE/*"
+                    }
+                  ]
+                }
+              },
+              "Resource": [
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-east-1:${AWS::AccountId}:instance/*"
+                },
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-west-2:${AWS::AccountId}:instance/*"
+                }
+              ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": "ec2:RunInstances",
+              "Condition": {
+                "StringLike": {
+                  "ec2:ResourceTag/Name": [
+                    "VZ-*"
+                  ]
+                }
+              },
+              "Resource": [
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-east-1::image/*"
+                },
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-west-2::image/*"
+                }
+              ]
+            },
+            {
+              "Sid": "RemainingRunInstancePermissions",
+              "Effect": "Allow",
+              "Action": "ec2:RunInstances",
+              "Resource": [
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-east-1:${AWS::AccountId}:placement-group/*"
+                },
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-east-1:${AWS::AccountId}:volume/*"
+                },
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-east-1::snapshot/*"
+                },
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-east-1:${AWS::AccountId}:network-interface/*"
+                },
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-east-1:${AWS::AccountId}:key-pair/*"
+                },
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-west-2:${AWS::AccountId}:placement-group/*"
+                },
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-west-2:${AWS::AccountId}:volume/*"
+                },
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-west-2::snapshot/*"
+                },
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-west-2:${AWS::AccountId}:network-interface/*"
+                },
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-west-2:${AWS::AccountId}:key-pair/*"
+                }
+              ]
+            },
+            {
+              "Sid": "Subnet",
+              "Effect": "Allow",
+              "Action": "ec2:RunInstances",
+              "Condition": {
+                "StringLike": {
+                  "ec2:ResourceTag/Name": [
+                    "App*",
+                    "DBSubnet*"
+                  ]
+                }
+              },
+              "Resource": [
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-east-1:${AWS::AccountId}:subnet/*"
+                },
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-west-2:${AWS::AccountId}:subnet/*"
+                }
+              ]
+            },
+            {
+              "Sid": "SecurityGroups",
+              "Effect": "Allow",
+              "Action": "ec2:RunInstances",
+              "Condition": {
+                "StringLike": {
+                  "ec2:ResourceTag/Name": [
+                    "default"
+                  ]
+                }
+              },
+              "Resource": [
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-east-1:${AWS::AccountId}:security-group/*"
+                },
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-west-2:${AWS::AccountId}:security-group/*"
+                }
+              ]
+            },
+            {
+              "Sid": "ECSResourceAllowedActions",
+              "Effect": "Allow",
+              "Action": [
+                "ecs:DeleteCluster",
+                "ecs:DeregisterContainerInstance",
+                "ecs:Poll",
+                "ecs:RegisterContainerInstance",
+                "ecs:RunTask",
+                "ecs:StartTask",
+                "ecs:StopTask",
+                "ecs:StartTelemetrySession",
+                "ecs:SubmitContainerStateChange",
+                "ecs:SubmitTaskStateChange",
+                "ecs:UpdateContainerAgent",
+                "ecs:UpdateContainerInstancesState"
+              ],
+              "Resource": "{{ALLOWED_ECS}}"
+            },
+            {
+              "Sid": "ECSNonResourceAllowedActions",
+              "Effect": "Allow",
+              "Action": [
+                "ecs:CreateCluster",
+                "ecs:CreateService",
+                "ecs:DeleteService",
+                "ecs:DeregisterTaskDefinition",
+                "ecs:DiscoverPollEndpoint",
+                "ecs:RegisterTaskDefinition",
+                "ecs:UpdateService"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Sid": "LambdaResourceAllowedActions",
+              "Effect": "Allow",
+              "Action": [
+                "lambda:AddPermission",
+                "lambda:CreateAlias",
+                "lambda:DeleteAlias",
+                "lambda:DeleteFunction",
+                "lambda:GetAlias",
+                "lambda:GetFunction",
+                "lambda:GetFunctionConfiguration",
+                "lambda:GetPolicy",
+                "lambda:InvokeFunction",
+                "lambda:InvokeAsync",
+                "lambda:ListAliases",
+                "lambda:ListVersionsByFunction",
+                "lambda:PublishVersion",
+                "lambda:RemovePermission",
+                "lambda:UpdateAlias",
+                "lambda:UpdateFunctionCode",
+                "lambda:UpdateFunctionConfiguration"
+              ],
+              "Resource": "{{ALLOWED_LAMBDAS}}"
+            },
+            {
+              "Sid": "LambdaNonResourceAllowedActions",
+              "Effect": "Allow",
+              "Action": [
+                "lambda:CreateEventSourceMapping",
+                "lambda:CreateFunction",
+                "lambda:DeleteEventSourceMapping",
+                "lambda:GetEventSourceMapping",
+                "lambda:ListEventSourceMappings",
+                "lambda:ListFunctions",
+                "lambda:UpdateEventSourceMapping"
+              ],
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    },
+    "CoFEEManagementToolsPolicy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "CoFEEManagementToolsPolicy",
+        "Roles": [
+          {
+            "Ref": "VZInstanceRoleprodCoFEE"
+          },
+          {
+            "Ref": "VZSAMLDevopsPlatform"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "CloudwatchAllowedActions",
+              "Effect": "Allow",
+              "Action": [
+                "cloudwatch:*"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Sid": "CloudformationAllowedActions",
+              "Effect": "Allow",
+              "Action": [
+                "cloudformation:CreateUploadBucket",
+                "cloudformation:EstimateTemplateCost",
+                "cloudformation:PreviewStackUpdate",
+                "cloudformation:ValidateTemplate"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Sid": "CloudformationAllowedResourceActions",
+              "Effect": "Allow",
+              "Action": [
+                "cloudformation:CancelUpdateStack",
+                "cloudformation:ContinueUpdateRollback",
+                "cloudformation:CreateChangeSet",
+                "cloudformation:CreateStack",
+                "cloudformation:DeleteStack",
+                "cloudformation:ExecuteChangeSet",
+                "cloudformation:SetStackPolicy",
+                "cloudformation:SignalResource",
+                "cloudformation:UpdateStack"
+              ],
+              "Resource": "{{ALLOWED_STACKS}}"
+            },
+            {
+              "Sid": "CloudTrailAllowedActions",
+              "Effect": "Allow",
+              "Action": [
+                "cloudtrail:*"
+              ],
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    },
+    "CoFEEDatabasePolicy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "CoFEEDatabasePolicy",
+        "Roles": [
+          {
+            "Ref": "VZInstanceRoleprodCoFEE"
+          },
+          {
+            "Ref": "VZSAMLDevopsDBCoFEE"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "RDSDBTagActions",
+              "Effect": "Allow",
+              "Action": [
+                "rds:AddTagsToResource",
+                "rds:ApplyPendingMaintenanceAction",
+                "rds:CreateDBInstance",
+                "rds:CreateDBInstanceReadReplica",
+                "rds:CreateDBSnapshot",
+                "rds:DeleteDBInstance",
+                "rds:DownloadDBLogFilePortion",
+                "rds:ModifyDBInstance",
+                "rds:PromoteReadReplica",
+                "rds:RebootDBInstance",
+                "rds:RemoveTagsFromResource",
+                "rds:RestoreDBInstanceFromDBSnapshot",
+                "rds:RestoreDBInstanceToPointInTime"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "rds:db-tag/VSAD": "CoFEE"
+                }
+              },
+              "Resource": "{{ALLOWED_DBS}}"
+            },
+            {
+              "Sid": "RDSESTagActions",
+              "Effect": "Allow",
+              "Action": [
+                "rds:AddTagsToResource",
+                "rds:AddSourceIdentifierToSubscription",
+                "rds:CreateEventSubscription",
+                "rds:DeleteEventSubscription",
+                "rds:ModifyEventSubscription",
+                "rds:RemoveSourceIdentifierFromSubscription",
+                "rds:RemoveTagsFromResource"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "rds:es-tag/VSAD": "CoFEE"
+                }
+              },
+              "Resource": "{{ALLOWED_EVENTS}}"
+            },
+            {
+              "Sid": "RDSOGTagActions",
+              "Effect": "Allow",
+              "Action": [
+                "rds:AddTagsToResource",
+                "rds:CopyOptionGroup",
+                "rds:CreateDBCluster",
+                "rds:CreateDBInstance",
+                "rds:CreateDBInstanceReadReplica",
+                "rds:CreateOptionGroup",
+                "rds:DeleteOptionGroup",
+                "rds:ModifyDBCluster",
+                "rds:ModifyDBInstance",
+                "rds:ModifyOptionGroup",
+                "rds:RemoveTagsFromResource",
+                "rds:RestoreDBClusterFromSnapshot",
+                "rds:RestoreDBClusterToPointInTime",
+                "rds:RestoreDBInstanceFromDBSnapshot",
+                "rds:RestoreDBInstanceToPointInTime"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "rds:og-tag/VSAD": "CoFEE"
+                }
+              },
+              "Resource": "{{ALLOWED_OPTION_GROUPS}}"
+            },
+            {
+              "Sid": "RDSPGTagActions",
+              "Effect": "Allow",
+              "Action": [
+                "rds:AddTagsToResource",
+                "rds:CopyDBParameterGroup",
+                "rds:CreateDBInstance",
+                "rds:CreateDBParameterGroup",
+                "rds:DeleteDBParameterGroup",
+                "rds:ModifyDBInstance",
+                "rds:ModifyDBParameterGroup",
+                "rds:RemoveTagsFromResource",
+                "rds:ResetDBParameterGroup"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "rds:pg-tag/VSAD": "CoFEE"
+                }
+              },
+              "Resource": "{{ALLOWED_PARAMETER_GROUPS}}"
+            },
+            {
+              "Sid": "RDSSecGrpTagActions",
+              "Effect": "Allow",
+              "Action": [
+                "rds:AddTagsToResource",
+                "rds:AuthorizeDBSecurityGroupIngress",
+                "rds:CreateDBInstance",
+                "rds:CreateDBSecurityGroup",
+                "rds:DeleteDBSecurityGroup",
+                "rds:ModifyDBInstance",
+                "rds:RemoveTagsFromResource",
+                "rds:RevokeDBSecurityGroupIngress"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "rds:secgrp-tag/VSAD": "CoFEE"
+                }
+              },
+              "Resource": [
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-east-1:${AWS::AccountId}:security-group/*"
+                },
+                {
+                  "Fn::Sub": "arn:aws:ec2:us-west-2:${AWS::AccountId}:security-group/*"
+                }
+              ]
+            },
+            {
+              "Sid": "RDSRITagActions",
+              "Effect": "Allow",
+              "Action": [
+                "rds:AddTagsToResource",
+                "rds:DescribeReservedDBInstances",
+                "rds:ListTagsForResource",
+                "rds:RemoveTagsFromResource"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "rds:ri-tag/VSAD": "CoFEE"
+                }
+              },
+              "Resource": "{{ALLOWED_RESERVED_INSTANCES}}"
+            },
+            {
+              "Sid": "RDSClusterSnapshotTagActions",
+              "Effect": "Allow",
+              "Action": [
+                "rds:CopyDBClusterSnapshot",
+                "rds:CreateDBClusterSnapshot",
+                "rds:DeleteDBClusterSnapshot",
+                "rds:DeleteDBCluster",
+                "rds:ModifyDBClusterSnapshotAttribute",
+                "rds:RestoreDBClusterFromSnapshot"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "rds:cluster-snapshot-tag/VSAD": "CoFEE"
+                }
+              },
+              "Resource": "{{ALLOWED_CLUSTER_SNAPSHOTS}}"
+            },
+            {
+              "Sid": "RDSClusterPGTagActions",
+              "Effect": "Allow",
+              "Action": [
+                "rds:CreateDBClusterParameterGroup",
+                "rds:CreateDBCluster",
+                "rds:DeleteDBClusterParameterGroup",
+                "rds:ModifyDBCluster",
+                "rds:ResetDBClusterParameterGroup"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "rds:cluster-pg-tag/VSAD": "CoFEE"
+                }
+              },
+              "Resource": "{{ALLOWED_CLUSTER_PARAMETER_GROUPS}}"
+            },
+            {
+              "Sid": "RDSClusterTagActions",
+              "Effect": "Allow",
+              "Action": [
+                "rds:CreateDBClusterSnapshot",
+                "rds:DeleteDBCluster",
+                "rds:FailoverDBCluster",
+                "rds:ModifyDBCluster",
+                "rds:RestoreDBClusterFromSnapshot",
+                "rds:RestoreDBClusterToPointInTime"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "rds:cluster-tag/VSAD": "CoFEE"
+                }
+              },
+              "Resource": "{{ALLOWED_CLUSTERS}}"
+            },
+            {
+              "Sid": "ElasticacheAllowedActions",
+              "Effect": "Allow",
+              "Action": [
+                "elasticache:*"
+              ],
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    },
+    "CoFEEStoragePolicy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "CoFEEStoragePolicy",
+        "Roles": [
+          {
+            "Ref": "VZInstanceRoleprodCoFEE"
+          },
+          {
+            "Ref": "VZSAMLDevopsDBCoFEE"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "EFSAllowedActions",
+              "Effect": "Allow",
+              "Action": [
+                "elasticfilesystem:CreateFileSystem",
+                "elasticfilesystem:CreateMountTarget",
+                "elasticfilesystem:ModifyMountTargetSecurityGroups",
+                "elasticfilesystem:DeleteMountTarget",
+                "elasticfilesystem:DeleteFileSystem"
+              ],
+              "Resource": "{{ALLOWED_EFS}}"
+            },
+            {
+              "Sid": "GlacierAllowedActions",
+              "Effect": "Allow",
+              "Action": [
+                "glacier:AddTagsToVault",
+                "glacier:CompleteMultipartUpload",
+                "glacier:DeleteArchive",
+                "glacier:DeleteVault",
+                "glacier:DeleteVaultAccessPolicy",
+                "glacier:DeleteVaultNotifications",
+                "glacier:InitiateJob",
+                "glacier:InitiateMultipartUpload",
+                "glacier:InitiateVaultLock",
+                "glacier:RemoveTagsFromVault",
+                "glacier:SetVaultAccessPolicy",
+                "glacier:SetVaultNotifications",
+                "glacier:UploadArchive",
+                "glacier:UploadMultipartPart"
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "glacier:ResourceTag/VSAD": "CoFEE"
+                }
+              },
+              "Resource": "{{ALLOWED_VAULTS}}"
+            },
+            {
+              "Sid": "GlacierAllowedActions",
+              "Effect": "Allow",
+              "Action": [
+                "glacier:AbortVaultLock",
+                "glacier:CompleteVaultLock",
+                "glacier:CreateVault",
+                "glacier:ListVaults"
+              ],
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    },
+    "CoFEENetworkingPolicy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "CoFEENetworkingPolicy",
+        "Roles": [
+          {
+            "Ref": "VZInstanceRoleprodCoFEE"
+          },
+          {
+            "Ref": "VZSAMLDevopsPlatform"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "Route53AllowedActions",
+              "Effect": "Allow",
+              "Action": [
+                "route53:CreateHealthCheck",
+                "route53:CreateHostedZone",
+                "route53:CreateReusableDelegationSet",
+                "route53:CreateTrafficPolicy",
+                "route53:CreateTrafficPolicyInstance",
+                "route53:CreateTrafficPolicyVersion",
+                "route53:DeleteHealthCheck",
+                "route53:DeleteHostedZone",
+                "route53:DeleteReusableDelegationSet",
+                "route53:DeleteTrafficPolicy",
+                "route53:DeleteTrafficPolicyInstance",
+                "route53:DisableDomainAutoRenew",
+                "route53:DisassociateVPCFromHostedZone",
+                "route53:EnableDomainAutoRenew",
+                "route53:UpdateHealthCheck",
+                "route53:UpdateHostedZoneComment",
+                "route53:UpdateTrafficPolicyComment",
+                "route53:UpdateTrafficPolicyInstance"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Sid": "Route53AllowedActions",
+              "Effect": "Allow",
+              "Action": [
+                "route53:AssociateHostedZoneWithVPC",
+                "route53:ChangeResourceRecordSets"
+              ],
+              "Resource": "arn:aws:route53:::hostedzone/*"
+            },
+            {
+              "Sid": "Route53DomainsAllowedActions",
+              "Effect": "Allow",
+              "Action": [
+                "route53domains:CheckDomainAvailability",
+                "route53domains:DeleteDomain",
+                "route53domains:DisableDomainTransferLock",
+                "route53domains:EnableDomainTransferLock",
+                "route53domains:RegisterDomain",
+                "route53domains:RetrieveDomainAuthCode",
+                "route53domains:TransferDomain",
+                "route53domains:UpdateDomainContact",
+                "route53domains:UpdateDomainContactPrivacy",
+                "route53domains:UpdateDomainNameservers",
+                "route53domains:AddDnssec",
+                "route53domains:ChangeAutoRenew",
+                "route53domains:ListDnssec",
+                "route53domains:RemoveDnssec",
+                "route53domains:RenewDomain"
+              ],
+              "Resource": "arn:aws:route53domains:::*"
+            }
+          ]
+        }
+      }
+    },
+    "CoFEEDeveloperToolsPolicy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "CoFEEDeveloperToolsPolicy",
+        "Roles": [
+          {
+            "Ref": "VZInstanceRoleprodCoFEE"
+          },
+          {
+            "Ref": "VZSAMLDevopsPlatform"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "CodeDeployAllowedActions",
+              "Effect": "Allow",
+              "Action": [
+                "codedeploy:BatchGetApplications",
+                "codedeploy:BatchGetOnPremisesInstances"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Sid": "CodeDeployResourceActions",
+              "Effect": "Allow",
+              "Action": [
+                "codedeploy:BatchGetDeployments",
+                "codedeploy:CreateApplication",
+                "codedeploy:CreateDeployment",
+                "codedeploy:CreateDeploymentConfig",
+                "codedeploy:CreateDeploymentGroup",
+                "codedeploy:DeleteApplication",
+                "codedeploy:DeleteDeploymentConfig",
+                "codedeploy:DeleteDeploymentGroup",
+                "codedeploy:DeregisterOnPremisesInstance",
+                "codedeploy:RegisterApplicationRevision",
+                "codedeploy:RegisterOnPremisesInstance",
+                "codedeploy:StopDeployment",
+                "codedeploy:UpdateApplication",
+                "codedeploy:UpdateDeploymentGroup"
+              ],
+              "Resource": "{{ALLOWED_CODEDEPLOY}}"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {}
+}
